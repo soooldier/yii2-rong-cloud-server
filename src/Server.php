@@ -64,7 +64,7 @@ class Server extends Component
         if (empty($avatar)) {
             $avatar = $this->defaultAvatar;
         }
-        $response = $this->_request('/user/getToken', ['userId' => $userId, 'name' => $userName, 'portraitUri' => $avatar]);
+        $response = $this->_request('/user/getToken', 'post', ['userId' => $userId, 'name' => $userName, 'portraitUri' => $avatar]);
         $body = Json::decode($response->body);
         if (isset($body['code']) && $body['code'] != 200) {
             $this->setError($this->formatError($body));
@@ -129,7 +129,7 @@ class Server extends Component
      */
     protected function formatError(array $body)
     {
-        return "URL:{$body['url']}CODE:{$body['code']}MESSAGE:{$bode['errorMessage']}";
+        return "URL:[{$body['url']}]CODE:[{$body['code']}]MESSAGE:[{$body['errorMessage']}]";
     }
 
     /**
