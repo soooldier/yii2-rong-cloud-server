@@ -53,7 +53,15 @@ class Server extends Component
         parent::init();
     }
 
-    public function  getToken($userId, $userName = '', $avatar = '')
+    /**
+     * 获取用户token，用于发起对话请求
+     * @param $userId
+     * @param string $userName
+     * @param string $avatar
+     * @return bool|mixed
+     * @throws InvalidParamException
+     */
+    public function getUserToken($userId, $userName = '', $avatar = '')
     {
         if (empty($userId)) {
             throw new InvalidParamException("Miss userId.");
@@ -65,6 +73,35 @@ class Server extends Component
             $avatar = $this->defaultAvatar;
         }
         $response = $this->_request('/user/getToken', 'post', ['userId' => $userId, 'name' => $userName, 'portraitUri' => $avatar]);
+        $body = Json::decode($response->body);
+        if (isset($body['code']) && $body['code'] != 200) {
+            $this->setError($this->formatError($body));
+            return false;
+        } else {
+            return $body;
+        }
+    }
+
+    /**
+     * 刷新用户信息
+     * @param $userId
+     * @param string $userName
+     * @param string $avatar
+     * @return bool|mixed
+     * @throws InvalidParamException
+     */
+    public function refreshUser($userId, $userName = '', $avatar = '')
+    {
+        if (empty($userId)) {
+            throw new InvalidParamException("Miss userId.");
+        }
+        if (empty($userName)) {
+            $userName = $this->defaultUserName;
+        }
+        if (empty($avatar)) {
+            $avatar = $this->defaultAvatar;
+        }
+        $response = $this->_request('/user/refresh', 'post', ['userId' => $userId, 'name' => $userName, 'portraitUri' => $avatar]);
         $body = Json::decode($response->body);
         if (isset($body['code']) && $body['code'] != 200) {
             $this->setError($this->formatError($body));
