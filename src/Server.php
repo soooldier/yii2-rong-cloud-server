@@ -8,9 +8,11 @@
 namespace rongCloud\server;
 
 use Yii;
+use yii\helpers\Json;
 use yii\base\Component;
-use anlutro\cURL\cURL;
 use yii\base\NotSupportedException;
+
+use anlutro\cURL\cURL;
 
 class Server extends Component
 {
@@ -38,6 +40,10 @@ class Server extends Component
      * @var string 默认用户名
      */
     public $defaultUserName = "斑马一号";
+    /**
+     * @var string 错误消息
+     */
+    public $error = '';
 
     /**
      * @inheritdoc
@@ -47,19 +53,25 @@ class Server extends Component
         parent::init();
     }
 
-    public function  getToken($userId, $userName, $avatar)
+    public function  getToken($userId, $userName = '', $avatar = '')
     {
         if (empty($userId)) {
             throw new InvalidParamException("Miss userId.");
         }
         if (empty($userName)) {
-            $userName = $this->$defaultUserName;
+            $userName = $this->defaultUserName;
         }
         if (empty($avatar)) {
             $avatar = $this->defaultAvatar;
         }
         $response = $this->_request('/user/getToken', ['userId' => $userId, 'name' => $userName, 'portraitUri' => $avatar]);
-        print_r($response);
+        $body = Json::decode($response->body);
+        if (isset($body['code']) && $body['code'] != 200) {
+            $this->setError($this->formatError($body));
+            return false;
+        } else {
+            return $body;
+        }
     }
 
     /**
@@ -76,6 +88,7 @@ class Server extends Component
         $url = $this->_createUrl($uri);
         $request = $curl->newRequest($method, $url, $data);
         $response = $this->_createHttpHeader($request)->send();
+        // todo: 记录接口日志
         return $response;
     }
 
@@ -101,11 +114,50 @@ class Server extends Component
     {
         $nonce = mt_rand();
         $timeStamp = time();
-        return $request->setOptions([
+        return $request->setHeaders([
             'RC-App-Key:'.$this->key,
             'RC-Nonce:'.$nonce,
             'RC-Timestamp:'.$timeStamp,
             'RC-Signature:'.sha1($this->secret.$nonce.$timeStamp),
         ]);
+    }
+
+    /**
+     * 格式化错误
+     * @param array $body
+     * @return string
+     */
+    protected function formatError(array $body)
+    {
+        return "URL:{$body['url']}CODE:{$body['code']}MESSAGE:{$bode['errorMessage']}";
+    }
+
+    /**
+     * 重置错误信息
+     */
+    public function cleanError()
+    {
+        $this->error = '';
+        return ;
+    }
+
+    /**
+     * 设置错误信息
+     * @param $error
+     */
+    public function setError($error)
+    {
+        $this->cleanError();
+        $this->error = $error;
+        return ;
+    }
+
+    /**
+     * 获取错误
+     * @return string
+     */
+    public function getError()
+    {
+        return $this->error;
     }
 }

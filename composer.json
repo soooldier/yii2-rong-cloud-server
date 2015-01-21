@@ -16,7 +16,7 @@
     },
     "autoload": {
         "psr-4": {
-            "rongCloud\\server\\": ""
+            "rongCloud\\server\\": "src/"
         }
     }
 }
